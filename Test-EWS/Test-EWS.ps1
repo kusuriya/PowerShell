@@ -37,6 +37,8 @@ By Jason Barbier
 .Parameter GetDelegates
     This will get a Delegate list assuming you have permission to the mailbox.
 
+.Parameter Debug
+    Enables advanced logging including the SOAP traces from EWS.
 
 ######>
 
