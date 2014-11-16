@@ -3,7 +3,7 @@ Test-EWS.ps1
 By Jason Barbier
 
 .Description
-    This script is to test EWS and will do so by connecting to a users mailbox over EWS and
+    This script is to test EWS and will do so by connecting to a user's mailbox over EWS and
     pull a count of all items in their Inbox and the first 10 subjects.
 
     Please note this script requires the EWS managed API DLLs to be in the same location as the script.
