@@ -42,24 +42,27 @@ By Jason Barbier
 
 ######>
 
+[CmdletBinding()]
+
 Param 
 (
-    [string]$Mailbox = $null,
-    $Credential = $null,
-    [URI]$EWSUrl = $null,
-    [string]$AuthenticationType = 'default',
+    [Parameter(Position=1)][string]$Mailbox = $null,
+    [Parameter(Position=2)][URI]$EWSUrl = $null,
+    [Parameter(Position=3)][string]$AuthenticationType = 'default',
+    [Parameter(Position=4)]$Credential = $null,
     [switch]$Debug = $false,
     [switch]$GetDelegates,
     [switch]$Headers = $false,
     [switch]$FreeBusy = $false,
-    [switch]$GetFolder = $false
+    [switch]$GetFolder = $false,
+    [bool]$AutoDiscoverRedirect = $true
 )
 
 Import-Module -Name ".\Microsoft.Exchange.WebServices.dll"
 
 try
 {
-    $EWS = new-object Microsoft.Exchange.WebServices.Data.ExchangeService
+    $EWS = new-object Microsoft.Exchange.WebServices.Data.ExchangeService([Microsoft.Exchange.WebServices.Data.ExchangeVersion]::Exchange2010)
     $EWS.UserAgent = 'Basic EWS Test Client.ps1/v0.1'
     if ($Debug -eq $true)
     {
@@ -78,7 +81,7 @@ try
     if ($EWSUrl -eq $null)
     {
         Write-Host -ForegroundColor Yellow "No EWS location Provided, attempting AutoDiscover"
-        $EWS.AutoDiscoverURL($mailbox);
+        $EWS.AutoDiscoverURL($mailbox,$AutoDiscoverRedirect);
         write-host -ForegroundColor Green "Found EWS at:" $EWS.Url.AbsoluteUri
         $EWS.url.UserInfo
     }
@@ -162,7 +165,7 @@ try
         $EndTime = $StartTime.AddDays(1) 
         $Duration = new-object Microsoft.Exchange.WebServices.Data.TimeWindow($StartTime,$EndTime)  
         $AvailabilityOptions = new-object Microsoft.Exchange.WebServices.Data.AvailabilityOptions  
-        $AvailabilityOptions.RequestedFreeBusyView = [Microsoft.Exchange.WebServices.Data.FreeBusyViewType]::DetailedMerged
+        $AvailabilityOptions.RequestedFreeBusyView = [Microsoft.Exchange.WebServices.Data.FreeBusyViewType]::Detailed
         $AvailabilityOptions.MeetingDuration = "30"
         $AvailabilityOptions.MaximumSuggestionsPerDay = "1" 
         $Listtype = ("System.Collections.Generic.List"+'`'+"1") -as "Type"
