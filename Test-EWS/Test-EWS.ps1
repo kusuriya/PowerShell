@@ -28,10 +28,10 @@ By Jason Barbier
     This runs the test to get messages from a the Inbox to verify that we can get from a folder. This assumes you have
     Permissions to the mailbox you want info from.
 
-.Parameter FreeBusy
+.Parameter GetFreeBusy
     This runs the test to get FreeBusy info and a suggestion.
 
-.Parameter Headers
+.Parameter GetHeaders
     This can be combined with any of the parameters to show the EWS headers
 
 .Parameter GetDelegates
@@ -42,20 +42,20 @@ By Jason Barbier
 
 ######>
 
-[CmdletBinding()]
+#[CmdletBinding()]
 
 Param 
 (
-    [Parameter(Position=1)][string]$Mailbox = $null,
-    [Parameter(Position=2)][URI]$EWSUrl = $null,
     [Parameter(Position=3)][string]$AuthenticationType = 'default',
     [Parameter(Position=4)]$Credential = $null,
-    [switch]$Debug = $false,
+    [Parameter(Position=2)][URI]$EWSUrl = $null,
+    [switch]$EWSTracing = $false.
     [switch]$GetDelegates,
-    [switch]$Headers = $false,
-    [switch]$FreeBusy = $false,
+    [switch]$GetHeaders = $false,
+    [switch]$GetFreeBusy = $false,
     [switch]$GetFolder = $false,
-    [bool]$AutoDiscoverRedirect = $true
+    [switch]$GetCalendar = $false,
+    [Parameter(Position=1)][string]$Mailbox = $null
 )
 
 Import-Module -Name ".\Microsoft.Exchange.WebServices.dll"
@@ -63,8 +63,8 @@ Import-Module -Name ".\Microsoft.Exchange.WebServices.dll"
 try
 {
     $EWS = new-object Microsoft.Exchange.WebServices.Data.ExchangeService([Microsoft.Exchange.WebServices.Data.ExchangeVersion]::Exchange2010)
-    $EWS.UserAgent = 'Basic EWS Test Client.ps1/v0.1'
-    if ($Debug -eq $true)
+    $EWS.UserAgent = 'Test-EWS Suite/v0.2'
+    if ($EWSTracing -eq $true)
     {
         $EWS.TraceEnabled = $true
         $EWS.TraceEnablePrettyPrinting = $true
@@ -81,7 +81,7 @@ try
     if ($EWSUrl -eq $null)
     {
         Write-Host -ForegroundColor Yellow "No EWS location Provided, attempting AutoDiscover"
-        $EWS.AutoDiscoverURL($mailbox,$AutoDiscoverRedirect);
+        $EWS.AutoDiscoverURL($mailbox,{$true});
         write-host -ForegroundColor Green "Found EWS at:" $EWS.Url.AbsoluteUri
         $EWS.url.UserInfo
     }
@@ -123,10 +123,7 @@ try
     }
 
 
-    # Find the Inbox of the user and bind to it.
-    $Inboxid = new-object Microsoft.Exchange.WebServices.Data.FolderId([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox,$mailbox) 
-    $Inbox = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($EWS,$inboxid)
-    $Inboxview = New-Object Microsoft.Exchange.WebServices.Data.ItemView(1000)
+
 
     # If they exist show the user where we got the info from.
     if ($EWS.HttpResponseHeaders.ContainsKey('X-FEServer') -eq $true)
@@ -137,13 +134,17 @@ try
     {
         Write-Host -ForegroundColor Yellow "Backend Server:" $EWS.HttpResponseHeaders.Item('X-BEServer')
     }
-    if ($Headers)
+    if ($GetHeaders)
     {
         $EWS.HttpHeaders
         $EWS.HttpResponseHeaders
     }
     if ($GetFolder)
     {
+    # Find the Inbox of the user and bind to it.
+    $Inboxid = new-object Microsoft.Exchange.WebServices.Data.FolderId([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox,$mailbox) 
+    $Inbox = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($EWS,$inboxid)
+    $Inboxview = New-Object Microsoft.Exchange.WebServices.Data.ItemView(100)
     # Poll items from Inbox
     $fiResult = $Inbox.FindItems($Inboxview)
     
@@ -153,13 +154,28 @@ try
     $items
     ""
     }
+    if ($GetCalendar)
+    {
+    # Find the Inbox of the user and bind to it.
+    $Calendarid = new-object Microsoft.Exchange.WebServices.Data.FolderId([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Calendar,$mailbox) 
+    $Calendar = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($EWS,$Calendarid)
+    $Calendarview = New-Object Microsoft.Exchange.WebServices.Data.ItemView(100)
+    # Poll items from Inbox
+    $fiResult = $Calendar.FindItems($Calendarview)
+    
+    $fiResult|select -First 5| Sort DateTimeReceived|select Subject,DateTimeReceived
+    ""
+    $items = $mailbox+"'s "+$Calendar.DisplayName+" contains "+$Calendar.TotalCount+" items"
+    $items
+    ""
+    }
 
     if ($GetDelegates -eq $true)
     {
         $EWS.GetDelegates($mailbox,$true)
     }
 
-    if ($FreeBusy)
+    if ($GetFreeBusy)
     {
         $StartTime = [DateTime]::Parse([DateTime]::Now.ToString("yyyy-MM-dd 0:00"))  
         $EndTime = $StartTime.AddDays(1) 
@@ -175,6 +191,7 @@ try
         $Attendeesbatch.add($Attendee)  
       
         $Availresponse = $EWS.GetUserAvailability($Attendeesbatch,$Duration,[Microsoft.Exchange.WebServices.Data.AvailabilityData]::FreeBusyAndSuggestions,$AvailabilityOptions)
+        
     
         write-Host "Result from Querying Free/Busy:"$Availresponse.AttendeesAvailability.Result
         ""
