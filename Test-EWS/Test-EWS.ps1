@@ -37,12 +37,12 @@ By Jason Barbier
 .Parameter GetDelegates
     This will get a Delegate list assuming you have permission to the mailbox.
 
-.Parameter Debug
+.Parameter EWSTracing
     Enables advanced logging including the SOAP traces from EWS.
 
 ######>
 
-#[CmdletBinding()]
+[CmdletBinding()]
 
 Param 
 (
@@ -141,26 +141,30 @@ try
     }
     if ($GetFolder)
     {
+    $defaultDisplaySet = 'From','Subject','DateTimeReceived'
+    $defaultDisplayPropertySet = New-Object System.Management.Automation.PSPropertySet(‘DefaultDisplayPropertySet’,[string[]]$defaultDisplaySet)
+    $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($defaultDisplayPropertySet)
     # Find the Inbox of the user and bind to it.
     $Inboxid = new-object Microsoft.Exchange.WebServices.Data.FolderId([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox,$mailbox) 
     $Inbox = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($EWS,$inboxid)
     $Inboxview = New-Object Microsoft.Exchange.WebServices.Data.ItemView(100)
     # Poll items from Inbox
     $fiResult = $Inbox.FindItems($Inboxview)
+    ""
+    write-host $mailbox "'s" $Inbox.DisplayName.tostring() "contains" $Inbox.TotalCount.ToString() "items"
     
-    $fiResult|select -First 5| Sort DateTimeReceived|select Sender,Subject,DateTimeReceived
     ""
-    $items = $mailbox+"'s "+$Inbox.DisplayName+" contains "+$Inbox.TotalCount+" items"
-    $items
-    ""
+    $fiResult|select -First 5| Sort DateTimeReceived|select Subject,DateTimeReceived
+    #Return $fiResult|gm
     }
     if ($GetCalendar)
     {
     # Find the Inbox of the user and bind to it.
     $Calendarid = new-object Microsoft.Exchange.WebServices.Data.FolderId([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Calendar,$mailbox) 
     $Calendar = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($EWS,$Calendarid)
-    $Calendarview = New-Object Microsoft.Exchange.WebServices.Data.ItemView(100)
-    # Poll items from Inbox
+    #Lets grab 2 items like LYNC does
+    $Calendarview = New-Object Microsoft.Exchange.WebServices.Data.ItemView(2)
+    # Poll the Calendar
     $fiResult = $Calendar.FindItems($Calendarview)
     
     $fiResult|select -First 5| Sort DateTimeReceived|select Subject,DateTimeReceived
@@ -177,19 +181,22 @@ try
 
     if ($GetFreeBusy)
     {
+        #Establish the Duration Window
         $StartTime = [DateTime]::Parse([DateTime]::Now.ToString("yyyy-MM-dd 0:00"))  
         $EndTime = $StartTime.AddDays(1) 
         $Duration = new-object Microsoft.Exchange.WebServices.Data.TimeWindow($StartTime,$EndTime)  
+        #Setup grabbing the free busy
         $AvailabilityOptions = new-object Microsoft.Exchange.WebServices.Data.AvailabilityOptions  
         $AvailabilityOptions.RequestedFreeBusyView = [Microsoft.Exchange.WebServices.Data.FreeBusyViewType]::Detailed
         $AvailabilityOptions.MeetingDuration = "30"
-        $AvailabilityOptions.MaximumSuggestionsPerDay = "1" 
+        $AvailabilityOptions.MaximumSuggestionsPerDay = "1"
+        #Get some FreeBusy 
         $Listtype = ("System.Collections.Generic.List"+'`'+"1") -as "Type"
         $Listtype = $listtype.MakeGenericType("Microsoft.Exchange.WebServices.Data.AttendeeInfo" -as "Type")
         $Attendeesbatch = [Activator]::CreateInstance($listtype) 
         $Attendee = new-object Microsoft.Exchange.WebServices.Data.AttendeeInfo($Mailbox)  
         $Attendeesbatch.add($Attendee)  
-      
+        #Display FreeBusy
         $Availresponse = $EWS.GetUserAvailability($Attendeesbatch,$Duration,[Microsoft.Exchange.WebServices.Data.AvailabilityData]::FreeBusyAndSuggestions,$AvailabilityOptions)
         
     
