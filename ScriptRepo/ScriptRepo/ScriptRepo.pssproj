@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>6CAFC0C6-A428-4d30-A9F9-700E829FEA51</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MyApplication</RootNamespace>
+    <AssemblyName>MyApplication</AssemblyName>
+    <Name>ScriptRepo</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include=".gitattributes" />
+    <Content Include=".gitignore" />
+    <Content Include="README.md" />
+    <Content Include="Test-EWS\Microsoft.Exchange.WebServices.Auth.dll" />
+    <Content Include="Test-EWS\Microsoft.Exchange.WebServices.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Lib\BaseModule.ps1" />
+    <Compile Include="Lib\BaseModule.psm1" />
+    <Compile Include="licenseing.ps1" />
+    <Compile Include="MailClient.ps1" />
+    <Compile Include="PerfData.ps1" />
+    <Compile Include="Reports.ps1" />
+    <Compile Include="Script.ps1" />
+    <Compile Include="ServiceTable.ps1" />
+    <Compile Include="Suppression.ps1" />
+    <Compile Include="Test-EWS\Test-EWS.ps1" />
+    <Compile Include="threaded.ps1" />
+    <Compile Include="TransportTest.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Lib\" />
+    <Folder Include="Test-EWS\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Target Name="Build" />
+</Project>
