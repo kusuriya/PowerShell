@@ -80,9 +80,9 @@ try
     
     if ($EWSUrl -eq $null)
     {
-        Write-Host -ForegroundColor Yellow "No EWS location Provided, attempting AutoDiscover"
+        Write-Warning "No EWS location Provided, attempting AutoDiscover"
         $EWS.AutoDiscoverURL($mailbox,{$true});
-        write-host -ForegroundColor Green "Found EWS at:" $EWS.Url.AbsoluteUri
+        Write-Verbose "Found EWS at:" $EWS.Url.AbsoluteUri
         $EWS.url.UserInfo
     }
     else
@@ -98,18 +98,18 @@ try
         {
             default
             {
-                Write-Host -ForegroundColor Yellow "Using current Windows credentials."
+                Write-Verbose "Using current Windows credentials."
                 $EWS.UseDefaultCredentials = $true
             }
             NTLM
             {
-                Write-Host -ForegroundColor Yellow "Creating an NTLM credential package."
+                Write-Verbose "Creating an NTLM credential package."
                 $CredentialCache.Add(($EWS.Url.AbsoluteUri),"NTLM",(get-credential))
                 $EWS.Credentials = new-object Microsoft.Exchange.WebServices.Data.WebCredentials($CredentialCache)
             }
             Negotiate
             {
-                Write-Host -ForegroundColor Yellow "Creating a Negotiate credential package"
+                Write-Verbose "Creating a Negotiate credential package"
                 $CredentialCache.Add(($EWS.Url.AbsoluteUri),"Negotiate",(get-credential))
                 $EWS.Credentials = new-object Microsoft.Exchange.WebServices.Data.WebCredentials($CredentialCache)
             }
@@ -128,11 +128,11 @@ try
     # If they exist show the user where we got the info from.
     if ($EWS.HttpResponseHeaders.ContainsKey('X-FEServer') -eq $true)
     {
-        Write-Host -ForegroundColor Yellow "FrontEnd Server:" $EWS.HttpResponseHeaders.Item('X-FEServer')
+        Write-Verbose "FrontEnd Server:" $EWS.HttpResponseHeaders.Item('X-FEServer')
     }
     if ($EWS.HttpResponseHeaders.ContainsKey('X-BEServer') -eq $true)
     {
-        Write-Host -ForegroundColor Yellow "Backend Server:" $EWS.HttpResponseHeaders.Item('X-BEServer')
+        Write-Verbose "Backend Server:" $EWS.HttpResponseHeaders.Item('X-BEServer')
     }
     if ($GetHeaders)
     {
@@ -151,7 +151,7 @@ try
     # Poll items from Inbox
     $fiResult = $Inbox.FindItems($Inboxview)
     ""
-    write-host $mailbox "'s" $Inbox.DisplayName.tostring() "contains" $Inbox.TotalCount.ToString() "items"
+    write-output $mailbox "'s" $Inbox.DisplayName.tostring() "contains" $Inbox.TotalCount.ToString() "items"
     
     ""
     $fiResult|select -First 5| Sort DateTimeReceived|select Subject,DateTimeReceived
@@ -200,18 +200,18 @@ try
         $Availresponse = $EWS.GetUserAvailability($Attendeesbatch,$Duration,[Microsoft.Exchange.WebServices.Data.AvailabilityData]::FreeBusyAndSuggestions,$AvailabilityOptions)
         
     
-        write-Host "Result from Querying Free/Busy:"$Availresponse.AttendeesAvailability.Result
+        Write-Output "Result from Querying Free/Busy:"$Availresponse.AttendeesAvailability.Result
         ""
         foreach($Avail in $availresponse.AttendeesAvailability){  
             foreach($CEvent in $Avail.CalendarEvents){
-               Write-Host "Subject:"$CEvent.Details.Subject
-               Write-Host "Free/Busy Status:"$CEvent.FreeBusyStatus 
-               Write-Host "Start:"$CEvent.StartTime
-               Write-Host "End:"$CEvent.EndTime
+               Write-Output "Subject:"$CEvent.Details.Subject
+               Write-Output "Free/Busy Status:"$CEvent.FreeBusyStatus 
+               Write-Output "Start:"$CEvent.StartTime
+               Write-Output "End:"$CEvent.EndTime
                 ""
             }  
         }
-        Write-Host -ForegroundColor Yellow "A single meeting suggestion:"
+        Write-Verbose "A single meeting suggestion:"
         $Availresponse.Suggestions|select Date,Quality
     }
 }
@@ -220,9 +220,9 @@ try
 catch [Microsoft.Exchange.Webservices.Data.AccountIsLockedException]
 {
     Write-Error "The account has been locked out. Please unlock your account and try again."
-    write-error $_.Exception.InnerException
+    Write-Error $_.Exception.InnerException
 }
 catch
 {
-    write-error $_.Exception.InnerException
+    Write-Error $_.Exception.InnerException
 }
